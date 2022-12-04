@@ -56,6 +56,7 @@ func TestReElection(t *testing.T) {
 	// if the old leader rejoins, that shouldn't
 	// disturb the old leader.
 	cfg.connect(leader1)
+	fmt.Println("origin leader comes back!!!!")
 	leader2 := cfg.checkOneLeader()
 
 	// if there's no quorum, no leader should
@@ -64,6 +65,7 @@ func TestReElection(t *testing.T) {
 	cfg.disconnect((leader2 + 1) % servers)
 	time.Sleep(2 * RaftElectionTimeout)
 	cfg.checkNoLeader()
+	fmt.Println("two server again!!!!")
 
 	// if a quorum arises, it should elect a leader.
 	cfg.connect((leader2 + 1) % servers)
