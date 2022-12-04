@@ -20,7 +20,6 @@ package raft
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -146,7 +145,7 @@ func (rf *Raft) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) {
 	reply.Term = rf.currentTerm // if fresher, candidate will update
 	reply.VoteGranted = false
 	if args.Term < rf.currentTerm { // 见过这届领导人了，申请下一届
-		fmt.Println("<<<<<<<<<<<,")
+		//fmt.Println("<<<<<<<<<<<,")
 		return
 	}
 
@@ -157,14 +156,14 @@ func (rf *Raft) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) {
 
 	rf.currentTerm = args.Term // update own term
 	if (rf.votedFor == -1 || rf.votedFor == args.CandidateId) && rf.incomingFresher(args) {
-		fmt.Printf("server%d voted for server%d\n", rf.me, args.CandidateId)
+		//fmt.Printf("server%d voted for server%d\n", rf.me, args.CandidateId)
 		rf.state = Follower // bug:有必要吗
 		reply.VoteGranted = true
 		rf.votedFor = args.CandidateId
 		rf.tick() // bug：这里有个问题是在currentTerm 和 args.Term 相同时是否需要判断这个人就是我之前投票的人
 	} else {
-		fmt.Printf("server%d NOT voted for server%d for term%d\n", rf.me, args.CandidateId, args.Term)
-		fmt.Printf("voted for %d in term%d\n", rf.votedFor, rf.currentTerm)
+		//fmt.Printf("server%d NOT voted for server%d for term%d\n", rf.me, args.CandidateId, args.Term)
+		//fmt.Printf("voted for %d in term%d\n", rf.votedFor, rf.currentTerm)
 	}
 }
 
@@ -266,11 +265,11 @@ func Make(peers []*labrpc.ClientEnd, me int,
 func (rf *Raft) handleVoteResult(reply RequestVoteReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	fmt.Printf("*****************server %d in state %d in Term %d received vote %t\n", rf.me, rf.state, rf.currentTerm, reply.VoteGranted)
+	//fmt.Printf("*****************server %d in state %d in Term %d received vote %t\n", rf.me, rf.state, rf.currentTerm, reply.VoteGranted)
 	if reply.Term > rf.currentTerm {
 		rf.currentTerm = reply.Term
 		rf.state = Follower
-		rf.ballot = 0 // 好像多余了，超时会自动置为1
+		//rf.ballot = 0 // 好像多余了，超时会自动置为1 bug
 		rf.votedFor = -1
 		rf.tick()
 		return
@@ -279,7 +278,7 @@ func (rf *Raft) handleVoteResult(reply RequestVoteReply) {
 	if reply.VoteGranted && rf.state == Candidate {
 		rf.ballot++
 		if rf.ballot > len(rf.peers)/2 {
-			fmt.Printf("**** server %d becomes leader\n", rf.me)
+			//fmt.Printf("**** server %d becomes leader\n", rf.me)
 			rf.state = Leader
 			for i := 0; i < len(rf.peers); i++ {
 				if i == rf.me {
@@ -309,7 +308,7 @@ func (rf *Raft) timeoutCallback() {
 	defer rf.mu.Unlock()
 
 	if rf.state == Leader {
-		fmt.Printf("*** leader%d timeout\n", rf.me)
+		//fmt.Printf("*** leader%d timeout\n", rf.me)
 		// leader simply refresh timer
 		rf.tick()
 	} else {
@@ -317,7 +316,7 @@ func (rf *Raft) timeoutCallback() {
 		rf.votedFor = rf.me // vote for himself
 		rf.ballot = 1
 		rf.currentTerm += 1
-		fmt.Printf("*** server%d timeout, becomes candidate for term%d\n", rf.me, rf.currentTerm)
+		//fmt.Printf("*** server%d timeout, becomes candidate for term%d\n", rf.me, rf.currentTerm)
 
 		// construct arguments
 		var args RequestVoteArgs
@@ -370,11 +369,10 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 func (rf *Raft) handleAppendEntriesResult(reply AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	fmt.Printf("server %d in term %d received reply with term %d\n", rf.me, rf.currentTerm, reply.Term)
-	// 存在收到心跳但是Leader的Term比自己的currentTerm还小的情况吗。。？
+	//fmt.Printf("server %d in term %d received reply with term %d\n", rf.me, rf.currentTerm, reply.Term)
 	if reply.Term > rf.currentTerm {
 		// step down
-		fmt.Println("*********************存在收到心跳但是Leader的Term比自己的currentTerm还小的情况*** step down")
+		//fmt.Println("*********************存在收到心跳但是Leader的Term比自己的currentTerm还小的情况*** step down")
 		rf.currentTerm = reply.Term
 		rf.state = Follower // step down 自己封闭太久了
 		rf.votedFor = -1
@@ -398,11 +396,11 @@ func (rf *Raft) stepUpCallback() {
 
 		for i := 0; i < len(rf.peers); i++ {
 			if i != rf.me {
-				go func(server int, args AppendEntriesArgs) { // 并行效率更高
+				go func(server int, args AppendEntriesArgs) {
 					var reply AppendEntriesReply
-					ok := rf.sendAppendEntries(server, &args, &reply) //进行RPC
+					ok := rf.sendAppendEntries(server, &args, &reply)
 					if ok {
-						rf.handleAppendEntriesResult(reply) //对于获取到的结果进行处理
+						rf.handleAppendEntriesResult(reply)
 					}
 				}(i, args)
 			}
