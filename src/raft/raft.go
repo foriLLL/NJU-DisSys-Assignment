@@ -169,7 +169,7 @@ func (rf *Raft) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
-	// 处理 args 并 填充 reply
+	// handle args and complete reply
 	reply.Term = rf.currentTerm // if fresher, candidate will update
 	reply.VoteGranted = false
 	if args.Term < rf.currentTerm { // all ready seen leader for this term
