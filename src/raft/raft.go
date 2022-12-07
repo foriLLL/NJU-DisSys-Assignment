@@ -337,6 +337,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	return rf
 }
 
+// what to do for a server when timeout
 func (rf *Raft) timeoutCallback() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -384,6 +385,7 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *Ap
 	return ok
 }
 
+// send AppendEntry to certain server
 func (rf *Raft) sendAppendEntry2Certain(nodeId int) {
 	if nodeId == rf.me {
 		return
@@ -409,6 +411,7 @@ func (rf *Raft) sendAppendEntry2Certain(nodeId int) {
 	}(nodeId, args)
 }
 
+// server(probably leader) receiving replies from handleAppendEntries
 func (rf *Raft) handleAppendEntriesResult(reply AppendEntriesReply, nodeId int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -456,6 +459,7 @@ func (rf *Raft) handleAppendEntriesResult(reply AppendEntriesReply, nodeId int) 
 
 }
 
+// first become Leader and continue sending heart beat
 func (rf *Raft) stepUpCallback() {
 	// init
 	for i := 0; i < len(rf.peers); i++ {
@@ -496,6 +500,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		if args.PrevLogIndex > -1 {
 			if len(rf.log) <= args.PrevLogIndex || // not as long
 				rf.log[args.PrevLogIndex].Term != args.PrevLogTerm { // or unmatched term
+				// failed to match
 				reply.Success = false
 				return
 			}
